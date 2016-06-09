@@ -1,8 +1,8 @@
 import numpy as np
-from dataccess import utils
-from dataccess import output
+from utils import utils
+from utils import output
 import ipdb
-from dataccess.output import log
+from utils.output import log
 import os
 
 def test_merge_lists():

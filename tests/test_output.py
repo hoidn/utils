@@ -1,5 +1,5 @@
 import config
-from dataccess import output
+from utils import output
 from contextlib import contextmanager
 from StringIO import StringIO
 
