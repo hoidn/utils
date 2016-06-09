@@ -2,7 +2,7 @@
 Functions for controlling logging and other output.
 """
 
-
+from __future__ import print_function
 import os
 import config
 import logging
@@ -27,7 +27,7 @@ def isroot():
     """
     Return true if the MPI core rank is 0 and false otherwise.
     """
-    if 'OMPI_COMM_WORLD_RANK' not in ' '.join(list(os.environ.keys())):
+    if 'OMPI_COMM_WORLD_RANK' not in ' '.join(os.environ.keys()):
         return True
     else:
         rank = int(os.environ['OMPI_COMM_WORLD_RANK'])
