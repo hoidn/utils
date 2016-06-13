@@ -13,10 +13,10 @@ import itertools
 #import playback
 import random
 import operator
-from output import isroot
-from output import ifroot
-from output import log
-from output import conditional_decorator
+from .output import isroot
+from .output import ifroot
+from .output import log
+from .output import conditional_decorator
 from functools import reduce
 
 PKG_NAME = __name__.split('.')[0]
