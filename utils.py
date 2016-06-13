@@ -10,7 +10,7 @@ from time import time
 import pdb
 import hashlib
 import itertools
-import playback
+#import playback
 import random
 import operator
 from output import isroot
@@ -230,7 +230,7 @@ def save_image(save_path, imarr, fmt = 'tiff'):
     image.imsave(save_path + '.png', imarr)
 
 @ifroot
-@playback.db_insert
+#@playback.db_insert
 def save_data(x, y, save_path, mongo_key = 'data', init_dict = {}):
     import database
     dirname = os.path.dirname(save_path)
@@ -316,7 +316,7 @@ def save_image_and_show(save_path, imarr, title = 'Image', rmin = None, rmax = N
     show()
 
 
-@playback.db_insert
+#@playback.db_insert
 @ifplot
 def global_save_and_show(save_path):
     """
