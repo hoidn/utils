@@ -4,8 +4,8 @@ Functions for controlling logging and other output.
 
 
 import os
-import config
 import logging
+from . import config
 
 logging.basicConfig(filename = config.logfile_path, level = logging.DEBUG)
 
