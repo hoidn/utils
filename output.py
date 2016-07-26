@@ -1,16 +1,19 @@
-"""
+u"""
 Functions for controlling logging and other output.
 """
 
 
+from __future__ import absolute_import
 import os
 import logging
 from . import config
+from io import open
+from itertools import imap
 
 logging.basicConfig(filename = config.logfile_path, level = logging.DEBUG)
 
 class conditional_decorator(object):
-    """
+    u"""
     From http://stackoverflow.com/questions/10724854/how-to-do-a-conditional-decorator-in-python-2-6
     """
     def __init__(self, dec, condition):
@@ -24,17 +27,17 @@ class conditional_decorator(object):
         return self.decorator(func)
 
 def isroot():
-    """
+    u"""
     Return true if the MPI core rank is 0 and false otherwise.
     """
-    if 'OMPI_COMM_WORLD_RANK' not in ' '.join(list(os.environ.keys())):
+    if u'OMPI_COMM_WORLD_RANK' not in u' '.join(list(os.environ.keys())):
         return True
     else:
-        rank = int(os.environ['OMPI_COMM_WORLD_RANK'])
+        rank = int(os.environ[u'OMPI_COMM_WORLD_RANK'])
         return (rank == 0)
     
 def ifroot(func):
-    """
+    u"""
     Decorator that causes the decorated function to execute only if
     the MPI core rank is 0.
     """
@@ -44,17 +47,17 @@ def ifroot(func):
     return inner
 
 def stdout_to_file(path = None):
-    """
+    u"""
     Decorator that causes stdout to be redirected to a text file during the
     modified function's invocation.
     """
     if path is None:
-        path = 'mecana.log'
+        path = u'mecana.log'
     def decorator(func):
         import sys
         def new_func(*args, **kwargs):
             stdout = sys.stdout
-            sys.stdout = open(path, 'a')
+            sys.stdout = open(path, u'a')
             result = func(*args, **kwargs)
             sys.stdout.close()
             sys.stdout = stdout
@@ -67,8 +70,8 @@ def stdout_to_file(path = None):
 def log(*args):
     def newargs():
         if config.stdout_to_file:
-            return ('PID ', os.getpid(), ': ') + args
+            return (u'PID ', os.getpid(), u': ') + args
         else:
             return args
-    logging.info(' '.join(map(str, args)))
+    logging.info(u' '.join(imap(unicode, args)))
     #print(*newargs())

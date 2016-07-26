@@ -1,5 +1,8 @@
 # Author: O. Hoidn
 
+from __future__ import with_statement
+from __future__ import division
+from __future__ import absolute_import
 import numpy as np
 import copy
 import os
@@ -17,9 +20,10 @@ from .output import isroot
 from .output import ifroot
 from .output import log
 from .output import conditional_decorator
-from functools import reduce
-
-PKG_NAME = __name__.split('.')[0]
+from itertools import imap
+from itertools import izip
+from io import open
+PKG_NAME = __name__.split(u'.')[0]
 
 # from https://gist.github.com/rossdylan/3287138
 # TODO: how about this?:
@@ -35,7 +39,7 @@ def compose(*a):
         return a[0]
 
 def conserve_type(func):
-    """
+    u"""
     Decorator: for a function whose positional arguments are all either
     lists or np.ndarrays and returns the same number of iterables, convert
     each returned object to the same type (i.e. list or np.ndarray) as the
@@ -61,12 +65,12 @@ def conserve_type(func):
                 return output
 
         result = list(func(*args, **kwargs))
-        converted = list(map(convert, args, result))
+        converted = list(imap(convert, args, result))
         return convert(result, converted)
     return newfunc
 
 def all_isinstance(iterable, obj_type):
-    """
+    u"""
     Return True if all elements of iterable are of type obj_type.
     """
     return all(isinstance(r, obj_type) for r in iterable)
@@ -108,10 +112,10 @@ def angles_to_q(angles, e0):
     hbarc = 1973. # in eV * Angstrom
     def _angle_to_q(angle):
         return 2 * e0 * np.sin(np.deg2rad(angle)/2)/hbarc
-    return list(map(_angle_to_q, angles))
+    return list(imap(_angle_to_q, angles))
 
 def dict_leaf_mean(d):
-    """
+    u"""
     Return the average value of the values of the 'leaf' values
     in a (nested) dictionary.
     """    
@@ -128,7 +132,7 @@ def dict_leaf_mean(d):
 
 
 def merge_lists(*args):
-    """
+    u"""
     Merge a nested structure of tuples and/or lists and/or
     np.ndarrays by horizontal stacking along the innermost
     possible axis.
@@ -150,7 +154,7 @@ def merge_lists(*args):
     if len(np.shape(a)) == 1:
         return reduce(op, args)
     else:
-        return l_make(list(map(merge_lists, *args)))
+        return l_make(list(imap(merge_lists, *args)))
         
 
 def merge_dicts(*args):
@@ -160,27 +164,27 @@ def merge_dicts(*args):
     return final
 
 def prune_dict(dict1, dict2):
-    """
+    u"""
     Return a new dict based on dict1 with all keys not found in dict2 removed
     recursively; i.e. this function is intended to operate on two trees of nested
     dictionaries with similar structure.
     """
     if not isinstance(dict1, dict) or not isinstance(dict2, dict):
         return dict1
-    return {k: prune_dict(dict1[k], dict2[k])
+    return dict((k, prune_dict(dict1[k], dict2[k]))
         for k in dict1
-        if k in dict2}
+        if k in dict2)
 def dicts_take_intersecting_keys(d1, d2):
     return prune_dict(d1, d2), prune_dict(d2, d1)
 
 def roundrobin(*iterables):
-    """Merges iterables in an interleaved fashion.
+    u"""Merges iterables in an interleaved fashion.
 
     roundrobin('ABC', 'D', 'EF') --> A D E B F C"""
     # Recipe credited to George Sakkis
     if not iterables:
-        raise ValueError("Arguments must be 1 or more iterables")
-    nexts = itertools.cycle(iter(it).__next__ for it in iterables)
+        raise ValueError(u"Arguments must be 1 or more iterables")
+    nexts = itertools.cycle(iter(it).next for it in iterables)
     stopcount = 0
     while 1:
         try:
@@ -198,7 +202,7 @@ def mpi_rank():
     return comm.Get_rank()
 
 def mpimap(func, lst):
-    """
+    u"""
     Map func over list in parallel over all MPI cores.
 
     The full result is returned in each rank.
@@ -224,7 +228,7 @@ def is_plottable():
     return isroot()
 
 def ifplot(func):
-    """
+    u"""
     Decorator that causes a function to execute only if config.noplot is False
     and the MPI core rank is 0.
     """
@@ -232,7 +236,7 @@ def ifplot(func):
     def inner(*args, **kwargs):
         import config
         if config.noplot:
-            log( "PLOTTING DISABLED, EXITING." )
+            log( u"PLOTTING DISABLED, EXITING." )
         else:
             return func(*args, **kwargs)
     return inner
@@ -241,8 +245,8 @@ def ifplot(func):
 # playback fails for this function
 #@playback.db_insert
 @ifroot
-def save_image(save_path, imarr, fmt = 'tiff'):
-    """
+def save_image(save_path, imarr, fmt = u'tiff'):
+    u"""
     Save a 2d array to file as an image.
     """
     if not isinstance(imarr, np.ndarray):
@@ -252,27 +256,27 @@ def save_image(save_path, imarr, fmt = 'tiff'):
     import matplotlib.image as image
     dirname = os.path.dirname(save_path)
     if dirname and (not os.path.exists(dirname)):
-        os.system('mkdir -p ' + os.path.dirname(save_path))
-    np.save(save_path + '.npy', imarr)
-    if imarr.dtype == 'uint16':
-        imarr = imarr.astype('float')
+        os.system(u'mkdir -p ' + os.path.dirname(save_path))
+    np.save(save_path + u'.npy', imarr)
+    if imarr.dtype == u'uint16':
+        imarr = imarr.astype(u'float')
     im = Image.fromarray(imarr)
-    im.save(save_path + '.tif')
-    image.imsave(save_path + '.png', imarr)
+    im.save(save_path + u'.tif')
+    image.imsave(save_path + u'.png', imarr)
 
 @ifroot
 #@playback.db_insert
-def save_data(x, y, save_path, mongo_key = 'data', init_dict = {}):
+def save_data(x, y, save_path, mongo_key = u'data', init_dict = {}):
     import database
     dirname = os.path.dirname(save_path)
     if dirname and (not os.path.exists(dirname)):
-        os.system('mkdir -p ' + os.path.dirname(save_path))
+        os.system(u'mkdir -p ' + os.path.dirname(save_path))
     np.savetxt(save_path, [x, y])
     #database.mongo_add(mongo_key, [list(x), list(y)])
     # TODO: collection should be referred to by a string
-    to_insert_local = merge_dicts({k: v for k, v in database.to_insert.items()}, init_dict)
+    to_insert_local = merge_dicts(dict((k, v) for k, v in database.to_insert.items()), init_dict)
     to_insert_local[mongo_key] = [list(x), list(y)]
-    database.mongo_replace_atomic(database.collections_lookup['session_cache'], to_insert_local)
+    database.mongo_replace_atomic(database.collections_lookup[u'session_cache'], to_insert_local)
 
 
 
@@ -283,7 +287,7 @@ def save_data(x, y, save_path, mongo_key = 'data', init_dict = {}):
 #    return database.collections_lookup['session_cache'].find(search_dict)
 
 def flatten_dict(d):
-    """
+    u"""
     Given a nested dictionary whose values at the "bottom" are numeric, create
     a 2d array where the rows are of the format:
         k1, k2, k3, value
@@ -311,23 +315,23 @@ def flatten_dict(d):
     flat_arr = np.fromiter(walkdict(d), float)
     try:
         return np.reshape(flat_arr, (len(flat_arr) / depth, depth))
-    except ValueError as e:
-        raise ValueError("Dictionary of incorrect format given to flatten_dict: " + e)
+    except ValueError, e:
+        raise ValueError(u"Dictionary of incorrect format given to flatten_dict: " + e)
 
 @ifroot
 def save_0d_event_data(save_path, event_data_dict, **kwargs):
-    """
+    u"""
     Save an event data dictionary to file in the following column format:
         run number, event number, value
     """
     dirname = os.path.dirname(save_path)
     if dirname and (not os.path.exists(dirname)):
-        os.system('mkdir -p ' + os.path.dirname(save_path))
+        os.system(u'mkdir -p ' + os.path.dirname(save_path))
     np.savetxt(save_path, flatten_dict(event_data_dict), **kwargs)
 
 
-def save_image_and_show(save_path, imarr, title = 'Image', rmin = None, rmax = None, show_plot = True):
-    """
+def save_image_and_show(save_path, imarr, title = u'Image', rmin = None, rmax = None, show_plot = True):
+    u"""
     Save a 2d array to file as an image and then display it.
     """
     ave, rms = imarr.mean(), imarr.std()
@@ -337,10 +341,10 @@ def save_image_and_show(save_path, imarr, title = 'Image', rmin = None, rmax = N
         rmax = ave + 5 * rms
     @ifplot
     def show():
-        log( "rmin", rmin)
-        log( "rmax", rmax)
+        log( u"rmin", rmin)
+        log( u"rmax", rmax)
         import pyimgalgos.GlobalGraphics as gg
-        gg.plotImageLarge(imarr, amp_range=(rmin, rmax), title = title, origin = 'lower')
+        gg.plotImageLarge(imarr, amp_range=(rmin, rmax), title = title, origin = u'lower')
         if show_plot:
             gg.show()
     save_image(save_path, imarr)
@@ -350,36 +354,36 @@ def save_image_and_show(save_path, imarr, title = 'Image', rmin = None, rmax = N
 #@playback.db_insert
 @ifplot
 def global_save_and_show(save_path):
-    """
+    u"""
     Save current matplotlib plot to file and then show it.
     """
     import config
-    if config.plotting_mode == 'notebook':
+    if config.plotting_mode == u'notebook':
         from mpl_plotly  import plt
     else:
         import matplotlib.pyplot as plt
     dirname = os.path.dirname(save_path)
     name = os.path.basename(save_path)
-    extsplit = name.split('.')
+    extsplit = name.split(u'.')
     if len(extsplit) <= 1:
-        ext = ''
+        ext = u''
     else:
-        ext = '.' + extsplit[-1]
+        ext = u'.' + extsplit[-1]
     name = name[:255 - (len(ext) + 1)]
-    save_path = dirname + '/' + name + ext
+    save_path = dirname + u'/' + name + ext
     if dirname and (not os.path.exists(dirname)):
-        os.system('mkdir -p ' + os.path.dirname(save_path))
+        os.system(u'mkdir -p ' + os.path.dirname(save_path))
     plt.savefig(save_path)
     plt.show()
 
 def get_default_args(func):
-    """
+    u"""
     returns a dictionary of arg_name:default_values for the input function
     """
     import inspect
     args, varargs, keywords, defaults = inspect.getargspec(func)
     if defaults:
-        return dict(list(zip(args[-len(defaults):], defaults)))
+        return dict(list(izip(args[-len(defaults):], defaults)))
     else:
         return {}
 
@@ -409,13 +413,13 @@ def extrap1d(interpolator):
             iter(xs)
         except TypeError:
             xs = np.array([xs])
-        return np.array(list(map(pointwise, np.array(xs))))
+        return np.array(list(imap(pointwise, np.array(xs))))
 
     return ufunclike
 
 # TODO: improve efficiency for large objects (such as numpy arrays)
 def hash_obj(obj):
-    """
+    u"""
     return a hash of any python object
     """
     from meta.decompiler import decompile_func
@@ -424,9 +428,9 @@ def hash_obj(obj):
         return hashlib.sha1(dill.dumps(to_digest)).hexdigest()
 
     def iter_digest(to_digest):
-        return obj_digest(reduce(operator.add, list(map(hash_obj, to_digest))))
+        return obj_digest(reduce(operator.add, list(imap(hash_obj, to_digest))))
 
-    if (not isinstance(obj, np.ndarray)) and hasattr(obj, '__iter__') and (len(obj) > 1):
+    if (not isinstance(obj, np.ndarray)) and hasattr(obj, u'__iter__') and (len(obj) > 1):
         if isinstance(obj, dict):
             return iter_digest(iter(obj.items()))
         else:
@@ -434,7 +438,7 @@ def hash_obj(obj):
     else:
         # Functions receive special treatment, such that code changes alter
         # the hash value
-        if hasattr(obj, '__call__'):
+        if hasattr(obj, u'__call__'):
             try:
                 return obj_digest(ast.dump(decompile_func(obj)))
             # This covers an exception that happens in meta.decompiler under
@@ -446,7 +450,7 @@ def hash_obj(obj):
             return obj_digest(obj)
 
 def hashable_dict(d):
-    """
+    u"""
     try to make a dict convertible into a frozen set by 
     replacing any values that aren't hashable but support the 
     python buffer protocol by their sha1 hashes
@@ -460,7 +464,7 @@ def hashable_dict(d):
     return d
 
 def memoize_condition(cache_valid):
-    """
+    u"""
     Memoization operator that invalidates cache whenever cache_valid()
     evaluates to False.
     """
@@ -478,18 +482,18 @@ def memoize_condition(cache_valid):
 def memoize_timeout(timeout = 10):
     state = {}
     def cache_valid():
-        if 'last' not in state:
-            state['last'] = time()
+        if u'last' not in state:
+            state[u'last'] = time()
         curtime = time()
-        if curtime - state['last'] > timeout:
-            state['last'] = curtime
+        if curtime - state[u'last'] > timeout:
+            state[u'last'] = curtime
             return False
         else:
             return True
     return memoize_condition(cache_valid)
 
 def memoize(timeout = None):
-    """
+    u"""
     Memoization decorator with an optional timout parameter.
     """
     cache = {}
@@ -513,7 +517,7 @@ def memoize(timeout = None):
     return decorator
 
 def persist_to_file(file_name):
-    """
+    u"""
     Decorator for memoizing function calls to disk
 
     Inputs:
@@ -525,19 +529,19 @@ def persist_to_file(file_name):
 
     # These are the hoops we need to jump through because python doesn't allow
     # assigning to variables in enclosing scope:
-    state = {'loaded': False, 'cache_changed': False}
+    state = {u'loaded': False, u'cache_changed': False}
     def check_cache_loaded():
-        return state['loaded']
+        return state[u'loaded']
     def flag_cache_loaded():
-        state['loaded'] = True
+        state[u'loaded'] = True
     def check_cache_changed():
-        return state['cache_changed']
+        return state[u'cache_changed']
     def flag_cache_changed():
-        return state['cache_changed']
+        return state[u'cache_changed']
 
     def dump():
-        os.system('mkdir -p ' + os.path.dirname(file_name))
-        with open(file_name, 'w') as f:
+        os.system(u'mkdir -p ' + os.path.dirname(file_name))
+        with open(file_name, u'w') as f:
             dill.dump(cache, f)
 
     def decorator(func):
@@ -545,7 +549,7 @@ def persist_to_file(file_name):
         def compute(key):
             if not check_cache_loaded():
                 try:
-                    with open(file_name, 'r') as f:
+                    with open(file_name, u'r') as f:
                         to_load = dill.load(f)
                         for k, v in list(to_load.items()):
                             cache[k] = v
@@ -554,7 +558,7 @@ def persist_to_file(file_name):
                     pass
                 flag_cache_loaded()
             if not key in list(cache.keys()):
-                cache[key] = func(*dill.loads(key[0]), **{k: v for k, v in key[1]})
+                cache[key] = func(*dill.loads(key[0]), **dict((k, v) for k, v in key[1]))
                 if not check_cache_changed():
                     # write cache to file at interpreter exit if it has been
                     # altered
@@ -562,16 +566,16 @@ def persist_to_file(file_name):
                     atexit.register(dump)
                     flag_cache_changed()
 
-        if func.__code__.co_freevars:
-            closure_dict = hashable_dict(dict(list(zip(func.__code__.co_freevars, (c.cell_contents for c in func.__closure__)))))
+        if func.func_code.co_freevars:
+            closure_dict = hashable_dict(dict(list(izip(func.func_code.co_freevars, (c.cell_contents for c in func.func_closure)))))
         else:
             closure_dict = {}
 
         def new_func(*args, **kwargs):
             # if the "flush" kwarg is passed, recompute regardless of whether
             # the result is cached
-            if "flush" in list(kwargs.keys()):
-                kwargs.pop("flush", None)
+            if u"flush" in list(kwargs.keys()):
+                kwargs.pop(u"flush", None)
                 key = (dill.dumps(args), frozenset(list(kwargs.items())), frozenset(list(closure_dict.items())))
                 compute(key)
             key = (dill.dumps(args), frozenset(list(kwargs.items())), frozenset(list(closure_dict.items())))
@@ -583,7 +587,7 @@ def persist_to_file(file_name):
     return decorator
 
 def eager_persist_to_file(file_name, excluded = None, rootonly = True):
-    """
+    u"""
     Decorator for memoizing function calls to disk.
     Differs from persist_to_file in that the cache file is accessed and updated
     at every call, and that each call is cached in a separate file. This allows
@@ -600,13 +604,13 @@ def eager_persist_to_file(file_name, excluded = None, rootonly = True):
 
     def decorator(func):
         #check if function is a closure and if so construct a dict of its bindings
-        if func.__code__.co_freevars:
-            closure_dict = hashable_dict(dict(list(zip(func.__code__.co_freevars, (c.cell_contents for c in func.__closure__)))))
+        if func.func_code.co_freevars:
+            closure_dict = hashable_dict(dict(list(izip(func.func_code.co_freevars, (c.cell_contents for c in func.func_closure)))))
         else:
             closure_dict = {}
 
         def gen_key(*args, **kwargs):
-            """
+            u"""
             Based on args and kwargs of a function, as well as the 
             closure bindings, generate a cache lookup key
             """
@@ -623,7 +627,7 @@ def eager_persist_to_file(file_name, excluded = None, rootonly = True):
                 for k in list(merged_dict.keys()):
                     if k in excluded:
                         merged_dict.pop(k)
-            key = hash_obj(tuple(map(hash_obj, [args, merged_dict, list(closure_dict.items()), list(kwargs.items())])))
+            key = hash_obj(tuple(imap(hash_obj, [args, merged_dict, list(closure_dict.items()), list(kwargs.items())])))
             #print "key is", key
 #            for k, v in kwargs.iteritems():
 #(                print k, v)
@@ -631,13 +635,13 @@ def eager_persist_to_file(file_name, excluded = None, rootonly = True):
 
         @ifroot# TODO: fix this
         def dump_to_file(d, file_name):
-            os.system('mkdir -p ' + os.path.dirname(file_name))
-            with open(file_name, 'w') as f:
+            os.system(u'mkdir -p ' + os.path.dirname(file_name))
+            with open(file_name, u'w') as f:
                 pickle.dump(d, f)
             #print "Dumped cache to file"
     
         def compute(*args, **kwargs):
-            file_name = kwargs.pop('file_name', None)
+            file_name = kwargs.pop(u'file_name', None)
             key = gen_key(*args, **kwargs)
             value = func(*args, **kwargs)
             cache[key] = value
@@ -655,20 +659,20 @@ def eager_persist_to_file(file_name, excluded = None, rootonly = True):
             if key not in cache:
                 try:
                     try:
-                        with open(full_name, 'r') as f:
+                        with open(full_name, u'r') as f:
                             cache[key] = pickle.load(f)
                     except EOFError:
                         os.remove(full_name)
-                        log( "corrupt cache file deleted")
-                        raise ValueError("Corrupt file")
+                        log( u"corrupt cache file deleted")
+                        raise ValueError(u"Corrupt file")
                     #print "cache found"
                 except (IOError, ValueError):
                     #print "no cache found; computing"
                     compute(*args, file_name = full_name, **kwargs)
             # if the "flush" kwarg is passed, recompute regardless of whether
             # the result is cached
-            if "flush" in list(kwargs.keys()):
-                kwargs.pop("flush", None)
+            if u"flush" in list(kwargs.keys()):
+                kwargs.pop(u"flush", None)
                 # TODO: refactor
                 compute(*args, file_name = full_name, **kwargs)
             #print "returning from ", func.func_name
@@ -678,9 +682,9 @@ def eager_persist_to_file(file_name, excluded = None, rootonly = True):
 
     return decorator
 
-@eager_persist_to_file("cache/xrd.combine_masks/")
+@eager_persist_to_file(u"cache/xrd.combine_masks/")
 def combine_masks(imarray, mask_paths, verbose = False, transpose = False):
-    """
+    u"""
     Takes a list of paths to .npy mask files and returns a numpy array
     consisting of those masks ANDed together.
     """
@@ -689,7 +693,7 @@ def combine_masks(imarray, mask_paths, verbose = False, transpose = False):
     base_mask = ma.make_mask(np.ones(np.shape(imarray)))
     base_mask[imarray == 0.] = False
     if not mask_paths:
-        log( "No additional masks provided")
+        log( u"No additional masks provided")
         return base_mask
     else:
         # Data arrays must be transposed here for the same reason that they
@@ -698,7 +702,7 @@ def combine_masks(imarray, mask_paths, verbose = False, transpose = False):
             masks = [np.load(path).T for path in mask_paths]
         else:
             masks = [np.load(path) for path in mask_paths]
-        log( "Applying mask(s): ", mask_paths)
+        log( u"Applying mask(s): ", mask_paths)
         return base_mask & reduce(lambda x, y: x & y, masks)
 
 
