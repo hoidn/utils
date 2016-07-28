@@ -6,7 +6,7 @@ Functions for controlling logging and other output.
 from __future__ import absolute_import
 import os
 import logging
-from . import config
+import config
 from io import open
 from itertools import imap
 
