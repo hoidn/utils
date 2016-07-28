@@ -267,7 +267,8 @@ def save_image(save_path, imarr, fmt = u'tiff'):
 @ifroot
 #@playback.db_insert
 def save_data(x, y, save_path, mongo_key = u'data', init_dict = {}):
-    import database
+    # TODO: move database to utils repository
+    from dataccess import database
     dirname = os.path.dirname(save_path)
     if dirname and (not os.path.exists(dirname)):
         os.system(u'mkdir -p ' + os.path.dirname(save_path))
