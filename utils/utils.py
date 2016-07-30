@@ -6,7 +6,6 @@ from __future__ import absolute_import
 import numpy as np
 import copy
 import os
-import pickle
 import dill
 import pkg_resources
 from time import time
@@ -23,11 +22,14 @@ from .output import conditional_decorator
 from itertools import imap
 from itertools import izip
 from io import open
+from pathos.multiprocessing import ProcessingPool
+from pathos import multiprocessing
 PKG_NAME = __name__.split(u'.')[0]
 
 # from https://gist.github.com/rossdylan/3287138
 # TODO: how about this?:
 # def compose(*funcs): return lambda x: reduce(lambda v, f: f(v), reversed(funcs), x)
+# TODO: test caching decorators on functions that return None.
 from functools import partial
 def _composed(f, g, *args, **kwargs):
     return f(g(*args, **kwargs))
@@ -220,6 +222,20 @@ def mpimap(func, lst):
         results = list(roundrobin(*results))
     return results
 
+def parallelmap(func, lst, nodes = None):
+    """
+    Return the averaged signal and background (based on blank frames) over the given runs using
+    multiprocessing (as opposed to MPI).
+    """
+    if not nodes:
+        nodes = multiprocessing.cpu_count() - 2
+    pool = ProcessingPool(nodes=nodes)
+    try:
+        return pool.map(func, lst)
+    except KeyboardInterrupt:
+        pool.terminate()
+        pool.join()
+
 
 def is_plottable():
     import config
@@ -387,12 +403,12 @@ def get_default_args(func):
     else:
         return {}
 
-def resource_f(fpath):
+def resource_f(fpath, pkg_name = PKG_NAME):
     from io import StringIO
-    return StringIO(pkg_resources.resource_string(PKG_NAME, fpath))
+    return StringIO(pkg_resources.resource_string(pkg_name, fpath))
 
-def resource_path(fpath):
-    return pkg_resources.resource_filename(PKG_NAME, fpath)
+def resource_path(fpath, pkg_name = PKG_NAME):
+    return pkg_resources.resource_filename(pkg_name, fpath)
 
 def extrap1d(interpolator):
     xs = interpolator.x
@@ -541,7 +557,7 @@ def persist_to_file(file_name):
 
     def dump():
         os.system(u'mkdir -p ' + os.path.dirname(file_name))
-        with open(file_name, u'w') as f:
+        with open(file_name, 'wb') as f:
             dill.dump(cache, f)
 
     def decorator(func):
@@ -549,7 +565,7 @@ def persist_to_file(file_name):
         def compute(key):
             if not check_cache_loaded():
                 try:
-                    with open(file_name, u'r') as f:
+                    with open(file_name, 'rb') as f:
                         to_load = dill.load(f)
                         for k, v in list(to_load.items()):
                             cache[k] = v
@@ -636,8 +652,8 @@ def eager_persist_to_file(file_name, excluded = None, rootonly = True):
         @ifroot# TODO: fix this
         def dump_to_file(d, file_name):
             os.system(u'mkdir -p ' + os.path.dirname(file_name))
-            with open(file_name, u'w') as f:
-                pickle.dump(d, f)
+            with open(file_name, 'wb') as f:
+                dill.dump(d, f)
             #print "Dumped cache to file"
     
         def compute(*args, **kwargs):
@@ -659,8 +675,8 @@ def eager_persist_to_file(file_name, excluded = None, rootonly = True):
             if key not in cache:
                 try:
                     try:
-                        with open(full_name, u'r') as f:
-                            cache[key] = pickle.load(f)
+                        with open(full_name, 'rb') as f:
+                            cache[key] = dill.load(f)
                     except EOFError:
                         os.remove(full_name)
                         log( u"corrupt cache file deleted")

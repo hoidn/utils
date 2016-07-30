@@ -22,7 +22,7 @@ class Figure(object):
     def __init__(self):
         self.traces = []
         self.xaxis = {u'exponentformat': u'power'}
-        self.yaxis = {}
+        self.yaxis = {u'exponentformat': u'power'}
         self.layout = {u'xaxis': self.xaxis, u'yaxis': self.yaxis}
 
 
@@ -84,6 +84,12 @@ class Figure(object):
         else:
             raise NotImplementedError
 
+    def set_yscale(self, value):
+        if value == u'log':
+            self.yaxis[u'type'] = u'log'
+        else:
+            raise NotImplementedError
+
     def show(self):
         data = self.traces
         fig = go.Figure(data = data, layout = go.Layout(**self.layout))
@@ -134,6 +140,9 @@ class Plt(object):
 
     def xscale(self, scale):
         self._get_global_plot().set_xscale(scale)
+
+    def yscale(self, scale):
+        self._get_global_plot().set_yscale(scale)
 
     def title(self, title):
         self._get_global_plot().set_title(title)

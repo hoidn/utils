@@ -6,11 +6,16 @@ Functions for controlling logging and other output.
 from __future__ import absolute_import
 import os
 import logging
-from . import config
 from io import open
 from itertools import imap
 
-logging.basicConfig(filename = config.logfile_path, level = logging.DEBUG)
+# Control redirection of stdout:
+suppress_root_print = False
+stdout_to_file = False
+
+logfile_path = 'log.txt'
+
+logging.basicConfig(filename = logfile_path, level = logging.DEBUG)
 
 class conditional_decorator(object):
     u"""
@@ -57,7 +62,7 @@ def stdout_to_file(path = None):
         import sys
         def new_func(*args, **kwargs):
             stdout = sys.stdout
-            sys.stdout = open(path, u'a')
+            sys.stdout = open(path, 'w')
             result = func(*args, **kwargs)
             sys.stdout.close()
             sys.stdout = stdout
@@ -65,11 +70,10 @@ def stdout_to_file(path = None):
         return new_func
     return decorator
 
-#@conditional_decorator(stdout_to_file(path = config.logfile_path), config.stdout_to_file)
-@conditional_decorator(ifroot, config.suppress_root_print)
+@conditional_decorator(ifroot, suppress_root_print)
 def log(*args):
     def newargs():
-        if config.stdout_to_file:
+        if stdout_to_file:
             return (u'PID ', os.getpid(), u': ') + args
         else:
             return args
