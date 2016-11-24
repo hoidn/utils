@@ -90,10 +90,13 @@ class Figure(object):
         else:
             raise NotImplementedError
 
-    def show(self):
+    def show(self,save=False):
         data = self.traces
         fig = go.Figure(data = data, layout = go.Layout(**self.layout))
-        py.iplot(fig)
+        imagestr=None
++       if save:
++           imagestr='svg'
++       py.iplot(fig,image=imagestr)
 
 class Plt(object):
     def __init__(self):
@@ -150,9 +153,9 @@ class Plt(object):
     def legend(self):
         pass
 
-    def show(self):
+    def show(self,save=False):
         for fig in self.figures:
-            fig.show()
+            fig.show(save=save)
         self._clear()
 
     def imshow(self, *args, **kwargs):
