@@ -75,6 +75,12 @@ class Figure(object):
     def set_ylabel(self, ylabel):
         self.yaxis[u'title'] = ylabel
 
+    def set_xlim(self, range_tuple):
+        self.xaxis['range'] = list(range_tuple)
+        
+    def set_ylim(self, range_tuple):
+        self.yaxis['range'] = list(range_tuple)
+
     def set_title(self, title):
         self.layout[u'title'] = title
 
@@ -90,10 +96,13 @@ class Figure(object):
         else:
             raise NotImplementedError
 
-    def show(self):
+    def show(self,save=False):
+        imagestr=None
         data = self.traces
         fig = go.Figure(data = data, layout = go.Layout(**self.layout))
-        py.iplot(fig)
+        if save:
+            imagestr = 'avg'
+        py.iplot(fig, image = imagestr)
 
 class Plt(object):
     def __init__(self):
@@ -140,6 +149,12 @@ class Plt(object):
 
     def xscale(self, scale):
         self._get_global_plot().set_xscale(scale)
+
+    def ylim(self, range_tuple):
+        self._get_global_plot().set_ylim(range_tuple)
+
+    def xlim(self, range_tuple):
+        self._get_global_plot().set_xlim(range_tuple)
 
     def yscale(self, scale):
         self._get_global_plot().set_yscale(scale)
