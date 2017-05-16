@@ -376,7 +376,7 @@ def global_save_and_show(save_path):
     """
     import config
     if config.plotting_mode == 'notebook':
-        from mpl_plotly  import plt
+        from .mpl_plotly  import plt
     else:
         import matplotlib.pyplot as plt
     dirname = os.path.dirname(save_path)
