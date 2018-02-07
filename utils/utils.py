@@ -628,7 +628,7 @@ def eager_persist_to_file(file_name, excluded = None):
                 for k in list(merged_dict.keys()):
                     if k in excluded:
                         merged_dict.pop(k)
-            key = hash_obj(tuple(imap(hash_obj, [args, merged_dict, list(closure_dict.items()), list(kwargs.items())])))
+            key = hash_obj(tuple(imap(hash_obj, [args, merged_dict, func, list(kwargs.items())])))
             #print "key is", key
 #            for k, v in kwargs.iteritems():
 #(                print k, v)
