@@ -1,5 +1,4 @@
 # Author: O. Hoidn
-
 from __future__ import with_statement
 from __future__ import division
 from __future__ import absolute_import
@@ -15,8 +14,6 @@ import itertools
 #import playback
 import random
 import operator
-from .output import isroot
-from .output import ifroot
 from .output import log
 from .output import conditional_decorator
 from itertools import imap
@@ -237,18 +234,11 @@ def parallelmap(func, lst, nodes = None):
         pool.join()
 
 
-def is_plottable():
-    import config
-    if config.noplot:
-        return False
-    return isroot()
-
 def ifplot(func):
     u"""
     Decorator that causes a function to execute only if config.noplot is False
     and the MPI core rank is 0.
     """
-    @ifroot
     def inner(*args, **kwargs):
         import config
         if config.noplot:
@@ -260,7 +250,6 @@ def ifplot(func):
 
 # playback fails for this function
 #@playback.db_insert
-@ifroot
 def save_image(save_path, imarr, fmt = u'tiff'):
     u"""
     Save a 2d array to file as an image.
@@ -280,7 +269,6 @@ def save_image(save_path, imarr, fmt = u'tiff'):
     im.save(save_path + u'.tif')
     image.imsave(save_path + u'.png', imarr)
 
-@ifroot
 #@playback.db_insert
 def save_data(x, y, save_path, mongo_key = u'data', init_dict = {}):
     import database
@@ -334,7 +322,6 @@ def flatten_dict(d):
     except ValueError, e:
         raise ValueError(u"Dictionary of incorrect format given to flatten_dict: " + e)
 
-@ifroot
 def save_0d_event_data(save_path, event_data_dict, **kwargs):
     u"""
     Save an event data dictionary to file in the following column format:
@@ -602,7 +589,7 @@ def persist_to_file(file_name):
 
     return decorator
 
-def eager_persist_to_file(file_name, excluded = None, rootonly = True):
+def eager_persist_to_file(file_name, excluded = None):
     u"""
     Decorator for memoizing function calls to disk.
     Differs from persist_to_file in that the cache file is accessed and updated
@@ -613,8 +600,6 @@ def eager_persist_to_file(file_name, excluded = None, rootonly = True):
 
     Inputs:
         file_name: File name prefix for the cache file(s)
-        rootonly : boolean
-                If true, caching is only applied for the MPI process of rank 0.
     """
     cache = {}
 
@@ -649,7 +634,6 @@ def eager_persist_to_file(file_name, excluded = None, rootonly = True):
 #(                print k, v)
             return key
 
-        @ifroot# TODO: fix this
         def dump_to_file(d, file_name):
             os.system(u'mkdir -p ' + os.path.dirname(file_name))
             with open(file_name, 'wb') as f:
