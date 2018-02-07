@@ -283,7 +283,8 @@ def save_image(save_path, imarr, fmt = u'tiff'):
 @ifroot
 #@playback.db_insert
 def save_data(x, y, save_path, mongo_key = u'data', init_dict = {}):
-    import database
+    # TODO: move database to utils repository
+    from dataccess import database
     dirname = os.path.dirname(save_path)
     if dirname and (not os.path.exists(dirname)):
         os.system(u'mkdir -p ' + os.path.dirname(save_path))
@@ -346,8 +347,8 @@ def save_0d_event_data(save_path, event_data_dict, **kwargs):
     np.savetxt(save_path, flatten_dict(event_data_dict), **kwargs)
 
 
-def save_image_and_show(save_path, imarr, title = u'Image', rmin = None, rmax = None, show_plot = True):
-    u"""
+def show_image(imarr, title = 'Image', rmin = None, rmax = None):
+    """
     Save a 2d array to file as an image and then display it.
     """
     ave, rms = imarr.mean(), imarr.std()
@@ -360,11 +361,17 @@ def save_image_and_show(save_path, imarr, title = u'Image', rmin = None, rmax = 
         log( u"rmin", rmin)
         log( u"rmax", rmax)
         import pyimgalgos.GlobalGraphics as gg
-        gg.plotImageLarge(imarr, amp_range=(rmin, rmax), title = title, origin = u'lower')
-        if show_plot:
-            gg.show()
-    save_image(save_path, imarr)
+        gg.plotImageLarge(imarr, amp_range=(rmin, rmax), title = title, origin = 'lower')
+        gg.show()
     show()
+
+def save_image_and_show(save_path, imarr, title = 'Image', rmin = None, rmax = None, show_plot = True):
+    """
+    Save a 2d array to file as an image and then display it.
+    """
+    if show_plot:
+        show_image(imarr, title = title, rmin = rmin, rmax = rmax)
+    save_image(save_path, imarr)
 
 
 #@playback.db_insert
