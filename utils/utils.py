@@ -589,7 +589,7 @@ def persist_to_file(file_name):
 
     return decorator
 
-def eager_persist_to_file(file_name, excluded = None):
+def eager_persist_to_file(file_name, excluded = None, args_only = False):
     u"""
     Decorator for memoizing function calls to disk.
     Differs from persist_to_file in that the cache file is accessed and updated
@@ -628,7 +628,10 @@ def eager_persist_to_file(file_name, excluded = None):
                 for k in list(merged_dict.keys()):
                     if k in excluded:
                         merged_dict.pop(k)
-            key = hash_obj(tuple(imap(hash_obj, [args, merged_dict, func, list(kwargs.items())])))
+            if args_only:
+                key = hash_obj(tuple(imap(hash_obj, [args, list(kwargs.items())])))
+            else:
+                key = hash_obj(tuple(imap(hash_obj, [args, merged_dict, func, list(kwargs.items())])))
             #print "key is", key
 #            for k, v in kwargs.iteritems():
 #(                print k, v)
@@ -654,7 +657,10 @@ def eager_persist_to_file(file_name, excluded = None):
             # Because we're splitting into multiple files, we can't retrieve the
             # cache until here
             #print "entering ", func.func_name
-            key = gen_key(*args, **kwargs)
+            if 'load' in list(kwargs.keys()):
+                key = kwargs['load']
+            else:
+                key = gen_key(*args, **kwargs)
             full_name = file_name + key
             if key not in cache:
                 try:
