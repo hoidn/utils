@@ -81,6 +81,12 @@ class Figure(object):
     def set_ylim(self, range_tuple):
         self.yaxis['range'] = list(range_tuple)
 
+    def set_xlim(self, range_tuple):
+        self.xaxis['range'] = list(range_tuple)
+        
+    def set_ylim(self, range_tuple):
+        self.yaxis['range'] = list(range_tuple)
+
     def set_title(self, title):
         self.layout['title'] = title
 

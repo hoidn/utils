@@ -1,8 +1,4 @@
 # Author: O. Hoidn
-
-
-
-
 import numpy as np
 import copy
 import os
@@ -15,8 +11,6 @@ import itertools
 #import playback
 import random
 import operator
-from .output import isroot
-from .output import ifroot
 from .output import log
 from .output import conditional_decorator
 from functools import reduce
@@ -238,18 +232,11 @@ def parallelmap(func, lst, nodes = None):
         pool.join()
 
 
-def is_plottable():
-    import config
-    if config.noplot:
-        return False
-    return isroot()
-
 def ifplot(func):
     """
     Decorator that causes a function to execute only if config.noplot is False
     and the MPI core rank is 0.
     """
-    @ifroot
     def inner(*args, **kwargs):
         import config
         if config.noplot:
@@ -261,9 +248,8 @@ def ifplot(func):
 
 # playback fails for this function
 #@playback.db_insert
-@ifroot
-def save_image(save_path, imarr, fmt = 'tiff'):
-    """
+def save_image(save_path, imarr, fmt = u'tiff'):
+    u"""
     Save a 2d array to file as an image.
     """
     if not isinstance(imarr, np.ndarray):
@@ -281,7 +267,6 @@ def save_image(save_path, imarr, fmt = 'tiff'):
     im.save(save_path + '.tif')
     image.imsave(save_path + '.png', imarr)
 
-@ifroot
 #@playback.db_insert
 def save_data(x, y, save_path, mongo_key = 'data', init_dict = {}):
     import database
@@ -335,7 +320,6 @@ def flatten_dict(d):
     except ValueError as e:
         raise ValueError("Dictionary of incorrect format given to flatten_dict: " + e)
 
-@ifroot
 def save_0d_event_data(save_path, event_data_dict, **kwargs):
     """
     Save an event data dictionary to file in the following column format:
@@ -603,8 +587,8 @@ def persist_to_file(file_name):
 
     return decorator
 
-def eager_persist_to_file(file_name, excluded = None, rootonly = True):
-    """
+def eager_persist_to_file(file_name, excluded = None, args_only = False):
+    u"""
     Decorator for memoizing function calls to disk.
     Differs from persist_to_file in that the cache file is accessed and updated
     at every call, and that each call is cached in a separate file. This allows
@@ -614,8 +598,6 @@ def eager_persist_to_file(file_name, excluded = None, rootonly = True):
 
     Inputs:
         file_name: File name prefix for the cache file(s)
-        rootonly : boolean
-                If true, caching is only applied for the MPI process of rank 0.
     """
     cache = {}
 
@@ -644,13 +626,15 @@ def eager_persist_to_file(file_name, excluded = None, rootonly = True):
                 for k in list(merged_dict.keys()):
                     if k in excluded:
                         merged_dict.pop(k)
-            key = hash_obj(tuple(map(hash_obj, [args, merged_dict, list(closure_dict.items()), list(kwargs.items())])))
+            if args_only:
+                key = hash_obj(tuple(imap(hash_obj, [args, list(kwargs.items())])))
+            else:
+                key = hash_obj(tuple(imap(hash_obj, [args, merged_dict, func, list(kwargs.items())])))
             #print "key is", key
 #            for k, v in kwargs.iteritems():
 #(                print k, v)
             return key
 
-        @ifroot# TODO: fix this
         def dump_to_file(d, file_name):
             os.system('mkdir -p ' + os.path.dirname(file_name))
             with open(file_name, 'wb') as f:
@@ -671,7 +655,10 @@ def eager_persist_to_file(file_name, excluded = None, rootonly = True):
             # Because we're splitting into multiple files, we can't retrieve the
             # cache until here
             #print "entering ", func.func_name
-            key = gen_key(*args, **kwargs)
+            if 'load' in list(kwargs.keys()):
+                key = kwargs['load']
+            else:
+                key = gen_key(*args, **kwargs)
             full_name = file_name + key
             if key not in cache:
                 try:
