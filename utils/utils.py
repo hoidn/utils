@@ -248,8 +248,8 @@ def ifplot(func):
 
 # playback fails for this function
 #@playback.db_insert
-def save_image(save_path, imarr, fmt = u'tiff'):
-    u"""
+def save_image(save_path, imarr, fmt = 'tiff'):
+    """
     Save a 2d array to file as an image.
     """
     if not isinstance(imarr, np.ndarray):
@@ -588,7 +588,7 @@ def persist_to_file(file_name):
     return decorator
 
 def eager_persist_to_file(file_name, excluded = None, args_only = False):
-    u"""
+    """
     Decorator for memoizing function calls to disk.
     Differs from persist_to_file in that the cache file is accessed and updated
     at every call, and that each call is cached in a separate file. This allows
@@ -670,7 +670,7 @@ def eager_persist_to_file(file_name, excluded = None, args_only = False):
                         log( "corrupt cache file deleted")
                         raise ValueError("Corrupt file")
                     #print "cache found"
-                except (IOError, ValueError):
+                except (IOError, ValueError, FileNotFoundError):
                     #print "no cache found; computing"
                     compute(*args, file_name = full_name, **kwargs)
             # if the "flush" kwarg is passed, recompute regardless of whether
