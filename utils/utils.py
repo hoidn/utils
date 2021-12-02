@@ -2,13 +2,12 @@
 import numpy as np
 import copy
 import os
-import dill
+#import dill
 import pkg_resources
 from time import time
 import pdb
 import hashlib
 import itertools
-#import playback
 import random
 import operator
 from .output import log
@@ -395,23 +394,17 @@ def resource_f(fpath, pkg_name = PKG_NAME):
 def resource_path(fpath, pkg_name = PKG_NAME):
     return pkg_resources.resource_filename(pkg_name, fpath)
 
-def extrap1d(interpolator, extend = 'zero'):
+def extrap1d(x, y, **kwargs):
+    from scipy.interpolate import interp1d
+    interpolator = interp1d(x, y, **kwargs)
     xs = interpolator.x
     ys = interpolator.y
 
     def pointwise(x):
         if x < xs[0]:
-            #return ys[0]
-            if extend == 'zero':
-                return 0.
-            else:
-                raise exception
+            return ys[0]
         elif x > xs[-1]:
-            #return ys[-1]
-            if extend == 'zero':
-                return 0.
-            else:
-                raise exception
+            return ys[-1]
         else:
             return interpolator(x)
 
